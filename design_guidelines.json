@@ -1,0 +1,136 @@
+{
+  "theme_and_concept": {
+    "name": "Tpt - Vietnamese Food Shop",
+    "style": "Warm, traditional Vietnamese (red/gold/cream), cozy authentic eatery, street food vibe.",
+    "app_type": "mobile_web_app",
+    "theme": "Light theme is preferred to match the cozy 'rice paper' and bright eatery aesthetic. Use dark red accents to provide contrast and traditional feel."
+  },
+  "typography": {
+    "headings": {
+      "font": "Playfair Display, serif",
+      "weights": ["600", "700"],
+      "usage": "Use for app name, welcome screen hero text, and primary section titles."
+    },
+    "body": {
+      "font": "Manrope, sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "Use for dish descriptions, prices, buttons, and all UI text for maximum legibility."
+    }
+  },
+  "colors": {
+    "primary": {
+      "hex": "#D32F2F",
+      "name": "Lacquer Red",
+      "usage": "Main CTAs, Add to Cart buttons, active tab icons."
+    },
+    "secondary": {
+      "hex": "#FFC107",
+      "name": "Temple Gold",
+      "usage": "Star ratings, subtle highlights, badges."
+    },
+    "background": {
+      "hex": "#FFF9F0",
+      "name": "Rice Paper Cream",
+      "usage": "Main app background. Never use pure white (#FFFFFF) for the main background to keep the warm, organic feel."
+    },
+    "surface": {
+      "hex": "#FFFFFF",
+      "name": "Pure White",
+      "usage": "Dish cards, bottom navigation bar, floating elements. Must use subtle shadows."
+    },
+    "text": {
+      "primary": "#2D2424",
+      "secondary": "#5C4D4D",
+      "inverse": "#FFFFFF"
+    }
+  },
+  "component_guidelines": {
+    "buttons": {
+      "primary": "rounded-full bg-[#D32F2F] text-white px-6 py-3 font-semibold hover:bg-[#B71C1C] transition-colors shadow-md active:scale-95",
+      "secondary": "rounded-full bg-white text-[#D32F2F] border border-[#D32F2F] px-6 py-3 font-semibold hover:bg-[#FFF9F0] transition-colors active:scale-95",
+      "icon": "rounded-full p-2 bg-[#FFF9F0] text-[#D32F2F] hover:bg-[#FFE0B2] transition-colors"
+    },
+    "cards": {
+      "dish_card": "bg-white rounded-2xl p-4 shadow-[0_4px_20px_rgba(45,36,36,0.05)] flex flex-col gap-3",
+      "order_card": "bg-white rounded-xl p-4 border border-[#F0E6D8] shadow-sm flex flex-col gap-2"
+    },
+    "navigation": {
+      "bottom_tabs": "fixed bottom-0 w-full bg-white/90 backdrop-blur-xl border-t border-[#F0E6D8] pb-6 pt-2 px-6 flex justify-between items-center z-50",
+      "top_header": "sticky top-0 z-40 bg-[#FFF9F0]/90 backdrop-blur-xl px-4 py-3 flex justify-between items-center"
+    },
+    "chips": {
+      "category_active": "bg-[#D32F2F] text-white px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap shadow-sm",
+      "category_inactive": "bg-white text-[#5C4D4D] px-5 py-2 rounded-full text-sm font-medium whitespace-nowrap border border-[#F0E6D8]"
+    }
+  },
+  "layouts": {
+    "global": "Mobile-first width constraint. Use max-w-md mx-auto min-h-screen bg-[#FFF9F0] relative pb-20 (to account for bottom nav).",
+    "home_screen": {
+      "header": "Welcome text, user avatar, and a subtle traditional pattern or icon.",
+      "categories": "Horizontal scroll view (`flex overflow-x-auto gap-3 no-scrollbar py-2`).",
+      "menu_grid": "CSS Grid: `grid grid-cols-2 gap-4` for dishes. Images must be `aspect-square object-cover rounded-xl`."
+    },
+    "dish_detail": {
+      "image": "Full width at the top, max-h-[40vh] object-cover rounded-b-3xl shadow-md",
+      "content": "Padded container with title, price, description. Fixed bottom action bar for 'Add to Cart'."
+    },
+    "admin_dashboard": {
+      "layout": "Use dense lists (`flex-col gap-3`) for Customers and Orders. Admin has a separate bottom nav or a sidebar if viewed on desktop, but default to mobile web view."
+    }
+  },
+  "visual_enhancers": {
+    "glassmorphism": "Use on headers and bottom tab nav: `bg-white/80 backdrop-blur-xl border-b/t border-[#F0E6D8]`.",
+    "shadows": "Keep shadows soft and tinted towards the warm colors. e.g., `shadow-[0_8px_30px_rgba(211,47,47,0.1)]`.",
+    "borders": "Minimal usage. Use subtle `#F0E6D8` for separators."
+  },
+  "motion": {
+    "interactions": "Use `active:scale-95 transition-transform` on all clickable items (cards, buttons).",
+    "page_transitions": "Framer Motion: fade and slide up (`initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}`)."
+  },
+  "accessibility": {
+    "contrast": "Ensure white text on red background meets 4.5:1 ratio. Dark brown text for main reading.",
+    "testing": "All interactive elements MUST include `data-testid` (e.g., `data-testid='login-submit-button'`, `data-testid='add-to-cart-banh-mi'`)."
+  },
+  "media": {
+    "images": {
+      "welcome_bg": {
+        "url": "https://images.pexels.com/photos/34523696/pexels-photo-34523696.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Street food vendor cooking at night market. Use for Welcome/Landing screen background with a dark overlay."
+      },
+      "banh_mi": {
+        "url": "https://images.pexels.com/photos/32961655/pexels-photo-32961655.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+        "description": "Traditional Vietnamese bánh mì on local newspaper."
+      },
+      "pho": {
+        "url": "https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MTN8MHwxfHNlYXJjaHwyfHx2aWV0bmFtZXNlJTIwcGhvJTIwc291cCUyMGJvd2x8ZW58MHx8fHwxNzg0NTQ3MDU5fDA&ixlib=rb-4.1.0&q=85",
+        "description": "Vietnamese phở in white ceramic bowl."
+      },
+      "bun": {
+        "url": "https://images.unsplash.com/photo-1583316175701-0bc5f25a0a44?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwxfHx2aWV0bmFtZXNlJTIwYnVuJTIwY2hhJTIwbm9vZGxlc3xlbnwwfHx8fDE3ODQ1NDcwNTl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Bún chả noodles."
+      },
+      "banh_beo": {
+        "url": "https://images.unsplash.com/photo-1509072619873-adb3dc289b50?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjY2NzV8MHwxfHNlYXJjaHwzfHx2aWV0bmFtZXNlJTIwYnVuJTIwY2hhJTIwbm9vZGxlc3xlbnwwfHx8fDE3ODQ1NDcwNTl8MA&ixlib=rb-4.1.0&q=85",
+        "description": "Chopsticks over a dish, used to represent Bánh Bèo or other small plate dishes."
+      }
+    }
+  },
+  "instructions_to_main_agent": [
+    "Build a mobile web app experience: restrict the main container to max-width (e.g., `max-w-md mx-auto`) with a mobile-style layout.",
+    "Implement bottom tab navigation fixed to the bottom of the screen.",
+    "Use `.js` files for all React components, not `.tsx`.",
+    "Do NOT use pure transparent backgrounds for sticky headers or bottom nav. Always use a solid color or glassmorphism (bg-color with opacity + backdrop-blur).",
+    "Use Lucide-react for icons.",
+    "For the login/register system, build a mock JWT authentication flow saving to localStorage or just React state.",
+    "Implement a mock cart state for placing orders (COD only).",
+    "Ensure the Admin dashboard is accessible via a specific login (e.g., admin@tpt.com) and displays mock customers and orders.",
+    "Make heavy use of custom scrollbar hiding utilities (e.g., `.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; } .no-scrollbar::-webkit-scrollbar { display: none; }`) for horizontal scrolling categories."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "Do not apply `transition: all`. Use specific transitions like `transition-colors`, `transition-transform`.",
+    "Never center align the root `.App` container text.",
+    "Avoid AI slop: no emoji icons like 🤖, create depth with z-index and shadows, use generous spacing.",
+    "Use pill-shaped buttons with hover/active animations.",
+    "Include `data-testid` on all buttons, links, and inputs."
+  ]
+}
