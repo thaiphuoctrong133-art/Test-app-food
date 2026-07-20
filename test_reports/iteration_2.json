@@ -1,0 +1,39 @@
+{
+  "summary": "Iteration 2 – Chat feature (AI + admin↔customer support). CRITICAL frontend bug found & fixed: /app/frontend/src/lib/api.ts had a malformed api object (closed early with `};` then orphan lines) that omitted all chat methods; without this fix the whole chat feature would throw at import/runtime. After fix, all 16 backend chat tests pass and full customer+admin UI flow verified end-to-end via mobile viewport.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_chat.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "None – all listed feature requirements verified passing. Main agent can proceed to next feature or ship."
+  ],
+  "critical_code_review_comments": [
+    "api.ts was malformed (missing chat methods, orphan lines). Now fixed with chatAi, chatAiHistory, supportSend, supportMy, supportConversations, supportConversation.",
+    "chat_ai endpoint recreates LlmChat per request without replaying stored history to the model (comment acknowledges). Multi-turn context relies solely on per-request session; if long conversation memory is required, replay last N messages into LlmChat. Not a bug for MVP.",
+    "Support polling every 5s on customer chat and 4s on admin detail is acceptable; consider WebSocket later.",
+    "Empty state, mobile spacing (8pt grid), 44px touch targets, and Vietnamese copy look correct in screenshots."
+  ],
+  "updated_files": [
+    "/app/frontend/src/lib/api.ts (fixed malformed api object; added 6 chat methods)",
+    "/app/backend/tests/test_chat.py (new – 16 tests)"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16)",
+    "frontend": "100% of listed chat flows"
+  },
+  "seed_data_creation": "Created test customers tptcust_*@test.com via /api/auth/register; support & AI messages inserted into MongoDB collections ai_messages and support_messages.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Chat feature (AI via Claude Sonnet 4.5 + customer/admin support chat) is fully working. Backend tests live in /app/backend/tests/test_chat.py – reuse them for regression. Frontend testIDs: chat-mode-ai, chat-mode-support, chat-input, chat-send-button, msg-mine, msg-theirs, chat-convs-count, chat-conv-<email>, admin-chat-input, admin-chat-send, admin-msg-mine, admin-msg-theirs, admin-chat-user-name, admin-chat-back. Customer register form testIDs: register-name-input, register-email-input, register-phone-input, register-password-input; primary CTA text is 'Tạo tài khoản'. Login testIDs: login-email-input, login-password-input, login-submit.",
+  "rca_of_issue": "RCA: A prior edit to /app/frontend/src/lib/api.ts left the `api = { ... };` object closed prematurely with lines 148-152 dangling outside it (line 148 started with `: () => request<SupportMessage[]>(...)` – an orphan property without a key). This produced (a) TypeScript/parse errors, (b) missing api.chatAi/chatAiHistory/supportSend/supportMy/supportConversations/supportConversation. Repro: open /app/frontend/app/(tabs)/chat.tsx which calls api.chatAiHistory() – module would fail. Fix: rewrote the tail of api.ts to place all six chat methods inside the api object before the closing `};`."
+}

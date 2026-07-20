@@ -85,6 +85,32 @@ export type Order = {
   created_at: string;
 };
 
+export type AiMessage = {
+  id: string;
+  user_id: string;
+  role: "user" | "assistant";
+  text: string;
+  created_at: string;
+};
+
+export type SupportMessage = {
+  id: string;
+  user_id: string;
+  sender: "customer" | "admin";
+  text: string;
+  created_at: string;
+};
+
+export type SupportConversation = {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  last_message: string;
+  last_sender: string;
+  last_time: string;
+  count: number;
+};
+
 // ---------- Auth ----------
 export const api = {
   register: (data: { email: string; password: string; name: string; phone?: string }) =>
@@ -118,4 +144,23 @@ export const api = {
     ),
   adminUpdateOrder: (id: string, status: string) =>
     request(`/admin/orders/${id}`, { method: "PATCH", body: { status } }),
+
+  // Chat: AI
+  chatAi: (message: string) =>
+    request<{ user_message: AiMessage; ai_message: AiMessage }>("/chat/ai", {
+      method: "POST",
+      body: { message },
+    }),
+  chatAiHistory: () => request<AiMessage[]>("/chat/ai/history"),
+
+  // Chat: Support
+  supportSend: (text: string, user_id?: string) =>
+    request<SupportMessage>("/chat/support", {
+      method: "POST",
+      body: user_id ? { text, user_id } : { text },
+    }),
+  supportMy: () => request<SupportMessage[]>("/chat/support/my"),
+  supportConversations: () => request<SupportConversation[]>("/chat/support/conversations"),
+  supportConversation: (customerId: string) =>
+    request<{ user: User; messages: SupportMessage[] }>(`/chat/support/${customerId}`),
 };

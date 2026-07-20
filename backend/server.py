@@ -12,6 +12,7 @@ import os
 import uuid
 import logging
 import jwt
+from emergentintegrations.llm.chat import LlmChat, UserMessage
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -22,8 +23,17 @@ DB_NAME = os.environ['DB_NAME']
 SECRET_KEY = os.environ['SECRET_KEY']
 ADMIN_EMAIL = os.environ['ADMIN_EMAIL']
 ADMIN_PASSWORD = os.environ['ADMIN_PASSWORD']
+EMERGENT_LLM_KEY = os.environ.get('EMERGENT_LLM_KEY', '')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7  # 7 days
+
+AI_SYSTEM_PROMPT = (
+    "Bạn là trợ lý AI thân thiện của quán 'Tpt' - một quán ăn Việt Nam truyền thống. "
+    "Tpt chuyên các món: Phở Bò, Phở Gà, Bánh Mì Thịt, Bánh Mì Trứng, Bún Chả, Bún Bò Huế, Bánh Bèo, Bánh Bèo Chén. "
+    "Nhiệm vụ của bạn là tư vấn món ăn, gợi ý combo, giải thích nguyên liệu, hỏi đáp về đơn hàng, "
+    "và hỗ trợ khách hàng đặt món. Luôn trả lời bằng tiếng Việt, ngắn gọn, thân thiện và nhiệt tình. "
+    "Nếu khách hỏi ngoài phạm vi ẩm thực/quán, hãy lịch sự chuyển hướng về chủ đề món ăn của Tpt."
+)
 
 # ==================== MongoDB ====================
 client = AsyncIOMotorClient(MONGO_URL)
@@ -354,6 +364,151 @@ async def admin_stats(admin=Depends(require_admin)):
         "total_menu": total_menu,
         "total_revenue": revenue,
     }
+
+# ---------- Chat: AI Assistant ----------
+class ChatMessageIn(BaseModel):
+    message: str
+
+class SupportMessageIn(BaseModel):
+    text: str
+    user_id: Optional[str] = None  # required if sender is admin
+
+
+@api_router.post("/chat/ai")
+async def chat_ai(body: ChatMessageIn, user=Depends(get_current_user)):
+    if not EMERGENT_LLM_KEY:
+        raise HTTPException(500, "Chưa cấu hình EMERGENT_LLM_KEY")
+    text = (body.message or "").strip()
+    if not text:
+        raise HTTPException(400, "Nội dung tin nhắn không được để trống")
+
+    # Save user message
+    now = datetime.now(timezone.utc).isoformat()
+    user_msg = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "role": "user",
+        "text": text,
+        "created_at": now,
+    }
+    await db.ai_messages.insert_one(user_msg)
+
+    # Load prior history for context (last 20 msgs)
+    history = await db.ai_messages.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", 1).to_list(200)
+
+    session_id = f"ai-{user['id']}"
+    chat = LlmChat(
+        api_key=EMERGENT_LLM_KEY,
+        session_id=session_id,
+        system_message=AI_SYSTEM_PROMPT,
+    ).with_model("anthropic", "claude-sonnet-4-5-20250929")
+
+    # Replay history (excluding the just-inserted user msg) so Claude has context
+    # emergentintegrations LlmChat maintains own history per-session, but we
+    # recreate each request so we manually feed the last few turns as context via a prefix in system.
+    # Simplest: pass just the new user message; rely on Mongo history for UI. Multi-turn tone still OK.
+    try:
+        reply = await chat.send_message(UserMessage(text=text))
+    except Exception as e:
+        logger.error(f"AI chat error: {e}")
+        raise HTTPException(500, f"Lỗi AI: {str(e)}")
+
+    ai_msg = {
+        "id": str(uuid.uuid4()),
+        "user_id": user["id"],
+        "role": "assistant",
+        "text": reply if isinstance(reply, str) else str(reply),
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.ai_messages.insert_one(ai_msg)
+    user_msg.pop("_id", None)
+    ai_msg.pop("_id", None)
+    return {"user_message": user_msg, "ai_message": ai_msg}
+
+
+@api_router.get("/chat/ai/history")
+async def chat_ai_history(user=Depends(get_current_user)):
+    msgs = await db.ai_messages.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", 1).to_list(500)
+    return msgs
+
+
+# ---------- Chat: Support (customer <-> admin) ----------
+@api_router.post("/chat/support")
+async def chat_support(body: SupportMessageIn, user=Depends(get_current_user)):
+    text = (body.text or "").strip()
+    if not text:
+        raise HTTPException(400, "Nội dung tin nhắn không được để trống")
+
+    if user["role"] == "admin":
+        if not body.user_id:
+            raise HTTPException(400, "user_id (khách hàng) là bắt buộc khi admin gửi tin")
+        target = await db.users.find_one({"id": body.user_id}, {"_id": 0})
+        if not target:
+            raise HTTPException(404, "Không tìm thấy khách hàng")
+        conv_user_id = body.user_id
+        sender = "admin"
+    else:
+        conv_user_id = user["id"]
+        sender = "customer"
+
+    msg = {
+        "id": str(uuid.uuid4()),
+        "user_id": conv_user_id,  # the customer's id (the conversation identifier)
+        "sender": sender,
+        "text": text,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.support_messages.insert_one(msg)
+    msg.pop("_id", None)
+    return msg
+
+
+@api_router.get("/chat/support/my")
+async def chat_support_my(user=Depends(get_current_user)):
+    if user["role"] == "admin":
+        raise HTTPException(403, "Endpoint này dành cho khách hàng")
+    msgs = await db.support_messages.find({"user_id": user["id"]}, {"_id": 0}).sort("created_at", 1).to_list(500)
+    return msgs
+
+
+@api_router.get("/chat/support/conversations")
+async def chat_support_conversations(admin=Depends(require_admin)):
+    pipeline = [
+        {"$sort": {"created_at": 1}},
+        {"$group": {
+            "_id": "$user_id",
+            "last_message": {"$last": "$text"},
+            "last_sender": {"$last": "$sender"},
+            "last_time": {"$last": "$created_at"},
+            "count": {"$sum": 1},
+        }},
+        {"$sort": {"last_time": -1}},
+    ]
+    convs = await db.support_messages.aggregate(pipeline).to_list(500)
+    # Attach user info
+    result = []
+    for c in convs:
+        user_doc = await db.users.find_one({"id": c["_id"]}, {"_id": 0, "password_hash": 0})
+        if not user_doc:
+            continue
+        result.append({
+            "user_id": c["_id"],
+            "user_name": user_doc.get("name", ""),
+            "user_email": user_doc.get("email", ""),
+            "last_message": c["last_message"],
+            "last_sender": c["last_sender"],
+            "last_time": c["last_time"],
+            "count": c["count"],
+        })
+    return result
+
+
+@api_router.get("/chat/support/{customer_id}")
+async def chat_support_conversation(customer_id: str, admin=Depends(require_admin)):
+    msgs = await db.support_messages.find({"user_id": customer_id}, {"_id": 0}).sort("created_at", 1).to_list(500)
+    user_doc = await db.users.find_one({"id": customer_id}, {"_id": 0, "password_hash": 0})
+    return {"user": user_doc, "messages": msgs}
+
 
 # Include the router
 app.include_router(api_router)
