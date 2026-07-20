@@ -1,0 +1,37 @@
+{
+  "summary": "Full E2E testing of Tpt Vietnamese food shop MVP. Backend: 20/20 pytest tests passed (auth register/login/me, menu list/detail with 8 seeded items across 4 categories Phở/Bánh mì/Bún/Bánh bèo, order create+list, admin stats/customers/orders/patch, RBAC 403 for non-admin, 400 duplicate email, 401 wrong password, 404 missing order, 400 invalid status). Frontend (mobile viewport 375x812): Welcome screen renders 'Tpt' branding + 2 buttons; register form submits and redirects to home tabs; home shows 8 dish cards in 2-col grid; category chip row scrolls horizontally without wrapping and filters correctly (Phở filter → 2 items); add-to-cart increments tab badge; dish detail screen renders name/desc/qty/add-to-cart; cart screen lists 2 items with qty controls, delete, address+phone+note inputs and 'Đặt hàng (COD)' button; checkout succeeds and order appears in Orders tab with 'Chờ xác nhận' status; admin login redirects to /(admin)/dashboard showing Doanh thu 270.000đ / Đơn hàng 3 / Khách hàng 7 / Món ăn 8 / Trung bình 90.000đ; admin customers tab shows 7 registered customers; admin orders tab shows all orders and tapping opens Order Detail modal with status chips (Chờ xác nhận, Đã xác nhận, Đang giao, Hoàn thành, Đã hủy). Non-blocking RN-web console warnings observed for deprecated 'shadow*' style props and 'props.pointerEvents'.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "All screens", "issues": ["RN-Web console warning: 'shadow*' style props are deprecated. Use 'boxShadow'. Cosmetic only; affects welcome, dashboard, login, register, home, profile screens."]}
+    ],
+    "react_native_issues": [
+      {"component": "shadow* props", "issue": "Uses shadowColor/shadowOpacity/shadowRadius/shadowOffset instead of RN-Web recommended boxShadow. Non-blocking warning. Reference: /app/frontend/app/index.tsx, (admin)/dashboard.tsx, (auth)/login.tsx, (auth)/register.tsx, (tabs)/index.tsx, (tabs)/profile.tsx"},
+      {"component": "pointerEvents", "issue": "React Native web warning: 'props.pointerEvents is deprecated. Use style.pointerEvents' - originating from a library (likely expo-router/navigation). Non-blocking."}
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_tpt_backend.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "(Optional/cosmetic) Migrate shadow* style props to boxShadow to silence RN-Web deprecation warnings in all files listed above.",
+    "(Optional) Cart context is in-memory only via React Context; state is lost on hard page reload. Acceptable for mobile SPA but consider persisting cart via AsyncStorage if you want survival across full app reloads on web."
+  ],
+  "critical_code_review_comments": [
+    "server.py excludes MongoDB _id via projection in every read query — good. POST /api/orders explicitly pops _id from returned dict — good.",
+    "Admin password is re-synced from ADMIN_PASSWORD env on every startup — good hygiene to avoid stale hash but be aware this overwrites any manual admin password change.",
+    "All backend routes are correctly prefixed with /api and served via api_router. Env vars (MONGO_URL, DB_NAME, SECRET_KEY, ADMIN_EMAIL, ADMIN_PASSWORD) read with no defaults — fails fast.",
+    "Frontend uses process.env.EXPO_PUBLIC_BACKEND_URL correctly in src/lib/api.ts. JWT stored via expo-secure-store wrapper.",
+    "All interactive elements have proper testID attributes (welcome buttons, login/register forms, dish cards, add-to-cart, category chips, cart lines & controls, checkout inputs, profile logout, admin stat cards, order rows). Good testability."
+  ],
+  "updated_files": ["/app/backend/tests/test_tpt_backend.py (new)"],
+  "success_rate": {"backend": "100% (20/20)", "frontend": "100% of tested flows (welcome, register, login-customer, login-admin, menu grid, category filter, dish detail, add-to-cart, cart edit + checkout, orders list, admin dashboard stats, admin customers, admin orders + status modal)"},
+  "seed_data_creation": "Created multiple TEST_ customer accounts via register flow (email prefix TEST_khach_* and testuser*/flow*/chk* /kart*) plus one TEST order per run. Admin (thaiphuoctrong133@gmail.com) is seeded by backend on startup.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Backend base URL: EXPO_PUBLIC_BACKEND_URL=https://tpt-food-shop.preview.emergentagent.com. Admin credentials in /app/memory/test_credentials.md. Pytest suite at /app/backend/tests/test_tpt_backend.py runs in ~3s and covers full CRUD + RBAC. For frontend Playwright, always use mobile viewport (375x812) and click via [data-testid]. Bottom-tab-bar navigation cannot be reached via role=button in web preview; use in-app navigation by clicking testID buttons (welcome/register/login) then tapping tab bar via evaluate() OR use direct URL routes /cart /orders /profile /dashboard /customers — but note CartContext is in-memory so add-to-cart state is lost between page.goto() calls; navigate via evaluate-click on tab text after adding to cart.",
+  "rca_of_issue": "N/A — no bugs found."
+}
